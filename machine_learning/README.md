@@ -1,1 +1,3 @@
-Run the notebook in Google Colab with pandas and scikit-learn. It downloads the public dataset from the URL in the first cell. The saved outputs are preserved; the notebook was not rerun during packaging.
+# Machine learning
+
+The Google Colab notebook trains and evaluates a logistic regression model using pandas and scikit-learn. The dataset is loaded from the URL in the notebook.

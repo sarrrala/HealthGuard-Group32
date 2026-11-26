@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+ match /databases/{database}/documents {
+
+ function signedIn() {
+ return request.auth != null;
+ }
+
+ function isDoctor() {
+ return signedIn()
+ && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+ && get(/databases/$(database)/documents/users/$(request.auth.uid))
+ .data.role == 'doctor';
+ }
+
+ // User profiles
+ match /users/{userId} {
+ allow read: if signedIn() && request.auth.uid == userId;
+
+ allow create: if signedIn()
+ && request.auth.uid == userId
+ && request.resource.data.role == 'patient';
+
+ allow update: if signedIn()
+ && request.auth.uid == userId
+ && request.resource.data.role == resource.data.role;
+
+ allow delete: if false;
+ }
+
+ // Patient appointments
+ match /users/{patientId}/appointments/{appointmentId} {
+
+ allow create: if signedIn()
+ && request.auth.uid == patientId
+ && request.resource.data.patientUid == patientId
+ && request.resource.data.doctorUid is string
+ && request.resource.data.doctorUid != '';
+
+ allow read: if signedIn()
+ && (
+ request.auth.uid == patientId
+ || (
+ isDoctor()
+ && resource.data.doctorUid == request.auth.uid
+ )
+ );
+
+ allow update, delete: if false;
+ }
+
+ // Doctor collection-group appointment queries
+ match /{path=**}/appointments/{appointmentId} {
+ allow read: if isDoctor()
+ && resource.data.doctorUid == request.auth.uid;
+ }
+ // Patient activities
+ match /users/{userId}/activities/{activityId} {
+ allow read, write: if request.auth != null
+ && request.auth.uid == userId;
+ }
+ // Patient analyses
+match /users/{userId}/analyses/{analysisId} {
+ allow read, write: if request.auth != null
+ && request.auth.uid == userId;
+}
+// Patient meals
+match /users/{userId}/meals/{mealId} {
+ allow read, write: if request.auth != null
+ && request.auth.uid == userId;
+}
+// Patient health readings
+match /users/{userId}/healthReadings/{readingId} {
+ allow read, write: if request.auth != null
+ && request.auth.uid == userId;
+}
+ }
+ }
